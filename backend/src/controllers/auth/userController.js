@@ -110,3 +110,18 @@ export const loginUser = asyncHandler(async (req, res) => {
     });
   }
 });
+
+export const logoutUser = asyncHandler(async (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ message: "User has been logged out successfully!" });
+});
+
+export const getUser = asyncHandler(async (req, res) => {
+  // Protect middleware extracts user information from token
+  const user = await UserModel.findById(req.user._id).select("-password");
+  if (user) {
+    return res.status(200).json(user);
+  } else {
+    return res.status(404).json({ message: "User not found!" });
+  }
+});
