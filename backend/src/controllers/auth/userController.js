@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import UserModel from "../../models/auth/userModel.js";
 import generateToken from "../../helpers/generateToken.js";
+import bcrypt from "bcrypt";
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -56,6 +57,56 @@ export const registerUser = asyncHandler(async (req, res) => {
   } else {
     res.status(400).json({
       message: "User creation failed. Invalid user data",
+    });
+  }
+});
+
+export const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "All fields are mandatory" });
+  }
+
+  // Check if user exists
+  const userExists = await UserModel.findOne({ email });
+  if (!userExists) {
+    return res.status(400).json({
+      message: "User does not exist. Please register before logging in",
+    });
+  }
+
+  // Check if password is correct
+  const isMatching = await bcrypt.compare(password, userExists.password);
+  if (!isMatching) {
+    return res.status(400).json({
+      message: "Invalid user credentials",
+    });
+  }
+
+  // Generate token, store it in cookie and return user information
+  const token = generateToken(userExists._id);
+  if (userExists && isMatching) {
+    const { _id, name, email, role, photo, bio, isVerified } = userExists;
+    res.cookie("token", token, {
+      path: "/",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+      sameSite: true,
+      secure: true,
+    });
+    res.status(200).json({
+      _id,
+      name,
+      email,
+      role,
+      photo,
+      bio,
+      isVerified,
+      token,
+    });
+  } else {
+    res.status(400).json({
+      message: "Login failed. Invalid credentials",
     });
   }
 });
