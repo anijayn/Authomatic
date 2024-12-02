@@ -125,3 +125,30 @@ export const getUser = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "User not found!" });
   }
 });
+
+export const updateUser = asyncHandler(async (req, res) => {
+  // Protect middleware extracts user information from token
+  const user = await UserModel.findById(req.user._id);
+  // If user exists, proceeding with the update
+  if (user) {
+    // Extract update details from request and update if they exist
+    const { name, bio, photo } = req.body;
+    user.name = name || user.name;
+    user.bio = bio || user.bio;
+    user.photo = photo || user.photo;
+
+    // Save the updated info to db and return the updated info in response
+    const updated = await user.save();
+    res.status(200).json({
+      _id: updated._id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
+      photo: updated.photo,
+      bio: updated.bio,
+      isVerified: updated.isVerified,
+    });
+  } else {
+    res.status(404).json({ message: "User updation failed. User not found" });
+  }
+});

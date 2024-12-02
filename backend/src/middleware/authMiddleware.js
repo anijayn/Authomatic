@@ -28,3 +28,13 @@ export const protect = asyncHandler(async (req, res, next) => {
       .json({ message: "Not authorized. Token failed to work" });
   }
 });
+
+export const adminProtect = asyncHandler(async (req, res) => {
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    res.status(403).json({
+      message: "Admins are only allowed to do this!",
+    });
+  }
+});
