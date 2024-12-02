@@ -193,12 +193,11 @@ export const verifyEmail = asyncHandler(async (req, res) => {
     userId: user._id,
     verificationToken: hashedToken,
     createdAt: Date.now(),
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000, //24 hours
   }).save();
 
-  const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-
   // Sending verification email
+  const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
   const subject = "Email Verification - Authomatic";
   const send_to = user.email;
   const reply_to = "noreply@gmail.com";
@@ -221,7 +220,7 @@ export const verifyUser = asyncHandler(async (req, res) => {
     res.status(400).json({ message: "Invalid verification token" });
   }
 
-  //Hashing the token so it can be retrieved from db and also check if the token has expired
+  // Hashing the token so it can be retrieved from db and also check if the token has expired
   const hashedToken = hashToken(verificationToken);
   const userToken = await TokenModel.findOne({
     verificationToken: hashedToken,
@@ -231,7 +230,7 @@ export const verifyUser = asyncHandler(async (req, res) => {
     res.status(401).json({ message: "Invalid or expired verification token" });
   }
 
-  //Retrieving user info from the user token + verification
+  // Retrieving user info from the user token + verification
   const user = await UserModel.findById(userToken.userId);
   if (user.isVerified) {
     res.status(400).json({ message: "User is already verified!" });
@@ -239,4 +238,73 @@ export const verifyUser = asyncHandler(async (req, res) => {
   user.isVerified = true;
   await user.save();
   res.status(200).json({ message: "User has been successfully verified!" });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: "Please provide an email" });
+  }
+
+  const user = await UserModel.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Check if the password reset token exist and if yes, remove it
+  let token = await TokenModel.findOne({ userId: user._id });
+  if (token) {
+    await token.deleteOne();
+  }
+
+  // Generate a random token and append the user id to it making it unique
+  const resetPasswordToken = crypto.randomBytes(64).toString("hex") + user._id;
+  const hashedToken = hashToken(resetPasswordToken);
+  await new TokenModel({
+    userId: user._id,
+    resetPasswordToken: hashedToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
+  }).save();
+
+  // Sending reset password email
+  const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetPasswordToken}`;
+  const subject = "Password Reset - Authomatic";
+  const send_to = user.email;
+  const send_from = process.env.USER_EMAIL;
+  const reply_to = "noreply@noreply.com";
+  const template = "forgotPassword";
+  const name = user.name;
+  const url = resetLink;
+  try {
+    await sendEmail(subject, send_to, send_from, reply_to, template, name, url);
+    res.json({ message: "Email sent" });
+  } catch (error) {
+    console.log("Error sending email: ", error);
+    return res.status(500).json({ message: "Email could not be sent" });
+  }
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { resetPasswordToken } = req.params;
+  const { password } = req.body;
+  if (!resetPasswordToken) {
+    res.status(400).json({ message: "Invalid reset password token" });
+  }
+
+  // Hashing the token so it can be retrieved from db and also check if the token has expired
+  const hashedToken = hashToken(resetPasswordToken);
+  const userToken = await TokenModel.findOne({
+    resetPasswordToken: hashedToken,
+    expiresAt: { $gt: Date.now() },
+  });
+  if (!userToken) {
+    res.status(400).json({ message: "Invalid or expired password token" });
+  }
+
+  // Retrieving user info from the user token + verification
+  const user = await UserModel.findById(userToken.userId);
+  user.password = password;
+  await user.save();
+  res.status(200).json({ message: "Password has been successfully reset!" });
 });

@@ -8,6 +8,8 @@ import {
   getLoginStatus,
   verifyEmail,
   verifyUser,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/auth/UserController.js";
 import {
   adminProtect,
@@ -29,6 +31,8 @@ router.patch("/profile", protect, updateUser);
 router.get("/login-status", getLoginStatus);
 router.post("/verify-email", protect, verifyEmail);
 router.post("/verify-user/:verificationToken", protect, verifyUser);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:resetPasswordToken", resetPassword);
 
 //Admin routes
 router.delete("/admin/users/:id", protect, adminProtect, deleteUser);
