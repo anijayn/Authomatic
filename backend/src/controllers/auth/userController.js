@@ -308,3 +308,29 @@ export const resetPassword = asyncHandler(async (req, res) => {
   await user.save();
   res.status(200).json({ message: "Password has been successfully reset!" });
 });
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) {
+    res.status(400).json({ message: "All fields are mandatory!" });
+  }
+  const user = await UserModel.findById(req.user._id);
+  const isMatching = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatching) {
+    res.status(400).json({ message: "Current password is invalid!" });
+  }
+  if (isMatching) {
+    if (oldPassword === newPassword) {
+      return res
+        .status(400)
+        .json({ message: "New password and old password cannot be the same!" });
+    }
+    user.password = newPassword;
+    await user.save();
+    res
+      .status(200)
+      .json({ message: "Password has been successfully updated!" });
+  } else {
+    res.status(500).json({ message: "Password update failed!" });
+  }
+});
