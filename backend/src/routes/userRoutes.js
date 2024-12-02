@@ -5,6 +5,7 @@ import {
   logoutUser,
   getUser,
   updateUser,
+  getLoginStatus,
 } from "../controllers/auth/UserController.js";
 import {
   adminProtect,
@@ -23,6 +24,7 @@ router.post("/login", loginUser);
 router.get("/logout", logoutUser);
 router.get("/profile", protect, getUser);
 router.patch("/profile", protect, updateUser);
+router.get("/login-status", getLoginStatus);
 
 //Admin routes
 router.delete("/admin/users/:id", protect, adminProtect, deleteUser);
