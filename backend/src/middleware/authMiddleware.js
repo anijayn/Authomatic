@@ -29,12 +29,22 @@ export const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const adminProtect = asyncHandler(async (req, res) => {
+export const adminProtect = asyncHandler(async (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
   } else {
     res.status(403).json({
       message: "Admins are only allowed to do this!",
+    });
+  }
+});
+
+export const creatorProtect = asyncHandler(async (req, res, next) => {
+  if (req.user && (req.user.role === "creator" || req.user.role === "admin")) {
+    next();
+  } else {
+    res.status(403).json({
+      message: "Creators/admins are only allowed to do this!",
     });
   }
 });
