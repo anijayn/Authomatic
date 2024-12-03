@@ -4,6 +4,7 @@ import cors from "cors";
 import connect from "./db/connect.js";
 import cookieParser from "cookie-parser";
 import fs from "node:fs";
+import errorHandler from "./src/helpers/errorHandler.js";
 
 const app = express();
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(
   })
 );
 app.use(cookieParser()); // Parses cookies
+app.use(errorHandler); // Error handler middleware
 
 // Routes
 const routeFiles = fs.readdirSync("./src/routes"); // Returns the *Routes.js file names as an array
